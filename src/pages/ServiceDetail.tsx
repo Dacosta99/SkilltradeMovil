@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogTitle,
   DialogActions,
-  TextareaAutosize,
   Box,
   Typography,
   Grid
@@ -29,13 +28,13 @@ import AlertCircleIcon from '@mui/icons-material/ReportProblem';
 import MapPinIcon from '@mui/icons-material/Room';
 import ClockIcon from '@mui/icons-material/AccessTime';
 import MessageIcon from '@mui/icons-material/Message';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
+//import BookmarkIcon from '@mui/icons-material/Bookmark';
 import FlagIcon from '@mui/icons-material/Flag';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ShieldCheckIcon from '@mui/icons-material/Security';
+//import ShieldCheckIcon from '@mui/icons-material/Security';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckIcon from '@mui/icons-material/Check';
-import { styled } from '@mui/material/styles';
+//import { styled } from '@mui/material/styles';
 import { ReviewCard } from '../components/review-card';
 import { fetchServicesFromAPI } from '../services/catalogService';
 import ReviewModal from '../components/review-modal';
@@ -46,19 +45,7 @@ import {
 } from '../services/reviewService';
 import { fetchUserPublications } from '../services/authService';
 
-// Estilo personalizado para el textarea del modal de contacto
-const StyledTextarea = styled(TextareaAutosize)({
-  width: '100%',
-  padding: '10px',
-  borderRadius: '5px',
-  border: '1px solid #ccc',
-  fontSize: '1rem',
-  fontFamily: 'Roboto, sans-serif',
-  '&:focus': {
-    borderColor: '#4f46e5',
-    outline: 'none',
-  },
-});
+
 
 // Componente principal de la página de detalle de servicio
 export const ServiceDetailPage: React.FC = () => {
@@ -67,7 +54,7 @@ export const ServiceDetailPage: React.FC = () => {
   // Estado para controlar la apertura del modal de contacto
   const [open, setOpen] = React.useState(false);
   // Estado para el mensaje a enviar al proveedor
-  const [message, setMessage] = React.useState('');
+
   // Estado para la lista de servicios (se usa para buscar el servicio por id)
   const [services, setServices] = React.useState<any[]>([]);
   // Estado de carga
@@ -143,12 +130,7 @@ export const ServiceDetailPage: React.FC = () => {
   const handleClose = () => setOpen(false);
 
   // Función para manejar el envío de mensaje al proveedor
-  const handleContact = () => {
-    // Aquí iría la lógica real de contacto (ej: API call)
-    console.log('Sending message:', message);
-    handleClose();
-    setMessage('');
-  };
+
 
   // Función para agregar una nueva reseña
   const handleAddReview = async (review: { rating: number; comment: string }) => {

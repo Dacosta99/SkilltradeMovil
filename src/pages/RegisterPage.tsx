@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import RegisterForm from '../components/RegisterForm';
-import { authService } from '../services/authService';
-import { FortOutlined } from '@mui/icons-material';
+//import { authService } from '../services/authService';
+//import { FortOutlined } from '@mui/icons-material';
 
 export default function RegisterPage() {
   const navigate = useNavigate();

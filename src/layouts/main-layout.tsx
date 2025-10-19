@@ -32,7 +32,6 @@ import { authService } from '../services/authService';
 import { fetchUserProfile } from '../services/authService'; 
 
 
-import type { Profile } from '../types/profile';
 
 /** Opciones principales de navegación */
 const pages = [
@@ -113,7 +112,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Agregar una constante para los créditos del usuario (esto después vendrá de la API)
-  const userCredits = saldo_creditos;
+  //const userCredits = saldo_creditos;
 
   //Permite el uso de la navegación programática
   const navigate = useNavigate();
