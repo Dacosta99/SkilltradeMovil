@@ -1,13 +1,3 @@
-/**
- * Layout principal de la aplicación
- * Este componente define la estructura base de la interfaz, incluyendo:
- * - Barra de navegación superior (AppBar)
- * - Menú de navegación
- * - Área de contenido principal
- * - Pie de página
- */
-
-// Importaciones de componentes Material-UI y otros recursos
 import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -26,20 +16,14 @@ import { Icon } from '@iconify/react';
 import { Grid } from '@mui/material';
 import Stack from '@mui/material/Stack';
 import Link from '@mui/material/Link';
-import { Link as RouterLink } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService'; 
-import { fetchUserProfile } from '../services/authService'; 
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { authService, fetchUserProfile } from '../services/authService';
 
-
-
-/** Opciones principales de navegación */
 const pages = [
   { name: 'Inicio', path: '/home' },
   { name: 'Servicios', path: '/services' }
 ];
 
-/** Opciones del menú de usuario */
 const settings = [
   { name: 'Mi perfil', path: '/profile' },
   { name: 'Configuración', path: '#' },
@@ -47,75 +31,45 @@ const settings = [
   { name: 'Cerrar sesión', path: null }
 ];
 
-/**
- * Componente MainLayout
- * Proporciona la estructura básica de la aplicación y maneja la navegación
- */
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  // Estados para controlar los menús desplegables
+  const navigate = useNavigate();
 
-  const [avatarUrl, setAvatarUrl] = React.useState<string>(''); // Estado para la foto
-  const [saldo_creditos, setSaldoCreditos] = React.useState<number>();
-  //const [profileData1, setProfileData1] = React.useState<any>(null);
-  const user = authService.getCurrentUser();
-
-  React.useEffect(() => {
-    
-    if (user && user.id) {
-      fetchUserProfile(user.id)
-        .then(data => {
-          // Ajusta según la respuesta de tu API
-          //setSaldoCreditos(1000);
-          setAvatarUrl('http://localhost:8001' + data.foto_url);
-          //console.log(data.foto_url)
-        })
-        .catch(() => setAvatarUrl('ornitorrinco.png')); // fallback
-    } else {
-      setAvatarUrl('ornitorrinco.png');
-    }
-  }, []);
-
-  React.useEffect(() => {
-
-  authService.getProfile(user.id).then(data => {
-    setSaldoCreditos(data.saldo_creditos)
-  }).catch(err => {
-    console.error('Error al cargar el perfil:', err);
-  });
-}, [user?.id]);
-
-  //setSaldoCreditos(1000)
-
-  // const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string>('ornitorrinco.png');
+  const [saldo_creditos, setSaldoCreditos] = React.useState<number>(0);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
-  /** 
-   * Manejadores de eventos para el menú de navegación móvil
-   */
-  // const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-  //   setAnchorElNav(event.currentTarget);
-  // };
+  // Intentar obtener usuario logueado
+  const user = authService.getCurrentUser();
 
-  /** 
-   * Manejadores de eventos para el menú de usuario
-   */
+  // Cargar datos del usuario (solo si existe)
+  React.useEffect(() => {
+    if (user && user.id) {
+      fetchUserProfile(user.id)
+        .then((data) => {
+          if (data.foto_url) {
+            setAvatarUrl('http://localhost:8001' + data.foto_url);
+          }
+        })
+        .catch(() => setAvatarUrl('ornitorrinco.png'));
+
+      authService
+        .getProfile(user.id)
+        .then((data) => setSaldoCreditos(data.saldo_creditos ?? 0))
+        .catch(() => setSaldoCreditos(0));
+    } else {
+      // Si no hay usuario, valores de prueba
+      setAvatarUrl('ornitorrinco.png');
+      setSaldoCreditos(0);
+    }
+  }, [user?.id]);
+
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
 
-  // const handleCloseNavMenu = () => {
-  //   setAnchorElNav(null);
-  // };
-
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
-
-  // Agregar una constante para los créditos del usuario (esto después vendrá de la API)
-  //const userCredits = saldo_creditos;
-
-  //Permite el uso de la navegación programática
-  const navigate = useNavigate();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
