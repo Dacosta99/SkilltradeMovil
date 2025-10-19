@@ -21,7 +21,7 @@ import { ServiceCard } from '../components/service-card-profile';
 import { ReviewCard } from '../components/review-card-profile';
 import { fetchProfileServicesFromAPI } from '../services/catalogService';
 import ServiceModal from '../components/service-modal';
-import { fetchReviewsFromAPI } from '../services/reviewService';
+//import { fetchReviewsFromAPI } from '../services/reviewService';
 
 export const ProfilePage: React.FC = () => {
   const user = authService.getCurrentUser();

@@ -15,9 +15,9 @@ import { Link as RouterLink } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { ServiceCard } from '../components/service-card';
 import { categories } from '../data/categories';
-import { useEffect, useState } from 'react'; // Importa useState para manejar el estado del modal
-import { fetchServicesFromAPI } from '../services/catalogService'; // Importa la función para obtener servicios desde la API
-import ServiceModal from '../components/service-modal'; // Importa el modal para crear servicios
+import { useEffect, useState } from 'react';
+import { fetchServicesFromAPI } from '../services/catalogService';
+import ServiceModal from '../components/service-modal';
 import type { Service } from '../types/service';
 import Autocomplete from '@mui/material/Autocomplete';
 
@@ -26,7 +26,11 @@ export default function HomePage() {
   const user = authService.getCurrentUser();
 
   const [featuredServices, setFeaturedServices] = useState<Service[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quickSearch, setQuickSearch] = useState({ term: '', location: '' });
+  const [quickResults, setQuickResults] = useState<Service[]>([]);
 
+  const popularCategories = categories;
 
   // Función para cerrar sesión y redirigir al login
   const handleLogout = () => {
@@ -34,26 +38,14 @@ export default function HomePage() {
     navigate('/login');
   };
 
-  // Estado para controlar la visibilidad del modal de creación de servicio
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Evita warning hasta que handleLogout se use realmente
+  void handleLogout;
 
   // Función para manejar la creación de un nuevo servicio desde el modal
   const handleCreateService = (newService: Service) => {
-    // Aquí se podría actualizar un estado global o hacer una petición a la API, etc.
-    // Por ahora solo cierra el modal.
+    console.log('Nuevo servicio creado:', newService);
     setIsModalOpen(false);
   };
-
-  // Categorías populares: ahora se usan directamente las categorías del archivo categories
-  const popularCategories = categories;
-
-  // Estado para los campos de búsqueda rápida
-  const [quickSearch, setQuickSearch] = useState({
-    term: '',
-    location: ''
-  });
-  // Estado para los resultados de búsqueda rápida
-  const [quickResults, setQuickResults] = useState<Service[]>([]);
 
   // Búsqueda reactiva SOLO para la sección de búsqueda rápida
   useEffect(() => {
@@ -71,6 +63,7 @@ export default function HomePage() {
       });
       setQuickResults(filtered);
     };
+
     if (quickSearch.term || quickSearch.location) {
       fetchAndFilter();
     } else {
@@ -81,12 +74,12 @@ export default function HomePage() {
   // El submit solo previene el reload y redirige si hay coincidencia exacta
   const handleQuickSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Buscar coincidencia exacta por título
-    const match = quickResults.find(s => s.titulo.trim().toLowerCase() === quickSearch.term.trim().toLowerCase());
+    const match = quickResults.find(
+      s => s.titulo.trim().toLowerCase() === quickSearch.term.trim().toLowerCase()
+    );
     if (match) {
       navigate(`/services/${match.id}`);
     }
-    // Si no hay coincidencia exacta, no hace nada (puedes mostrar un mensaje si lo deseas)
   };
 
   useEffect(() => {
@@ -109,14 +102,14 @@ export default function HomePage() {
       }}>
         <Container maxWidth="lg">
           <Grid container spacing={4} alignItems="center">
-            <Grid size={{md:6,xs:12}}>
+            <Grid size={{ md: 6, xs: 12 }}>
               <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
                 Intercambia habilidades y servicios en tu comunidad
               </Typography>
               <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-                Conecta con personas cercanas, comparte lo que sabes hacer y recibe ayuda en lo que necesitas. Una economía colaborativa basada en el intercambio justo.
+                Conecta con personas cercanas, comparte lo que sabes hacer y recibe ayuda en lo que necesitas. 
+                Una economía colaborativa basada en el intercambio justo.
               </Typography>
-              {/* Botones principales: Explorar servicios y Ofrecer un servicio */}
               <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Button
                   component={RouterLink}
@@ -126,13 +119,10 @@ export default function HomePage() {
                   sx={{
                     fontWeight: 'medium',
                     textTransform: 'none',
-                    borderRadius: '12px',  // Bordes más redondeados
-                    backgroundColor: '#FFf', // Color personalizado
-                    color: '#333', // Color del texto
-                    '&:hover': {
-                      backgroundColor: '#e9e9e9', // Color más oscuro para el hover
-                      color: '#000' // Color del texto en hover
-                    }
+                    borderRadius: '12px',
+                    backgroundColor: '#fff',
+                    color: '#333',
+                    '&:hover': { backgroundColor: '#e9e9e9', color: '#000' }
                   }}
                 >
                   Explorar servicios
@@ -147,15 +137,14 @@ export default function HomePage() {
                     borderRadius: '12px',
                     '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' }
                   }}
-                  onClick={() => setIsModalOpen(true)} // Abre el modal al hacer clic
+                  onClick={() => setIsModalOpen(true)}
                   startIcon={<Icon icon="lucide:plus" />}
                 >
                   Ofrecer un servicio
                 </Button>
               </Box>
             </Grid>
-            {/* Imagen ilustrativa de la comunidad */}
-            <Grid size={6}  sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Grid size={6} sx={{ display: { xs: 'none', md: 'block' } }}>
               <Box
                 component="img"
                 src="home.png"
@@ -171,12 +160,12 @@ export default function HomePage() {
       <Box sx={{ py: 4, px: 2 }}>
         <Container maxWidth="md" sx={{ mt: -8, position: 'relative', zIndex: 1 }}>
           <Card sx={{ boxShadow: 3, borderRadius: '12px' }}>
-            <CardContent >
+            <CardContent>
               <Typography variant="h6" component="h2" gutterBottom>
                 ¿Qué servicio estás buscando?
               </Typography>
               <form onSubmit={handleQuickSearch}>
-                <Grid container spacing={2} >
+                <Grid container spacing={2}>
                   <Grid size={7}>
                     <Autocomplete
                       freeSolo
@@ -199,16 +188,14 @@ export default function HomePage() {
                               height: '48px',
                               backgroundColor: '#f5f5f5',
                               borderRadius: '12px',
-                              '& fieldset': {
-                                borderRadius: '12px',
-                              }
+                              '& fieldset': { borderRadius: '12px' }
                             }
                           }}
                         />
                       )}
                     />
                   </Grid>
-                  <Grid size={3} >
+                  <Grid size={3}>
                     <Autocomplete
                       freeSolo
                       options={[...new Set(quickResults.map(s => s.ubicacion))]}
@@ -230,17 +217,14 @@ export default function HomePage() {
                               height: '48px',
                               backgroundColor: '#f5f5f5',
                               borderRadius: '12px',
-                              '& fieldset': {
-                                borderRadius: '12px',
-                              }
+                              '& fieldset': { borderRadius: '12px' }
                             }
                           }}
-                          size="medium"
                         />
                       )}
                     />
                   </Grid>
-                  <Grid size={2} >
+                  <Grid size={2}>
                     <Button
                       fullWidth
                       variant="contained"
@@ -250,10 +234,7 @@ export default function HomePage() {
                         height: '48px',
                         borderRadius: '12px',
                         textTransform: 'none',
-                        '&:hover': {
-                          backgroundColor: '#e0e0e0',
-                          color: '#000'
-                        }
+                        '&:hover': { backgroundColor: '#e0e0e0', color: '#000' }
                       }}
                     >
                       Buscar
@@ -261,8 +242,7 @@ export default function HomePage() {
                   </Grid>
                 </Grid>
               </form>
-              {/* Lista de resultados de búsqueda rápida */}
-              {/* La lista de resultados se elimina, ya que los Autocomplete son suficientes */}
+
               {quickResults.length === 0 && (quickSearch.term || quickSearch.location) && (
                 <Box sx={{ mt: 3 }}>
                   <Typography variant="body2" color="text.secondary">
@@ -275,7 +255,7 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Sección de explicación de funcionamiento */}
+      {/* Sección de explicación */}
       <Box sx={{ py: 8, backgroundColor: '#f5f5f5' }}>
         <Container maxWidth="lg">
           <Box textAlign="center" mb={6}>
@@ -305,8 +285,8 @@ export default function HomePage() {
                 description: 'Utiliza nuestra moneda virtual para intercambiar servicios, construir tu reputación y fortalecer tu comunidad.'
               }
             ].map((item, index) => (
-              <Grid size={{md:4,xs:12}} key={index}>
-                <Card sx={{ minHeight: 255, borderRadius: '5%', py: 0.1 }} >
+              <Grid size={{ md: 4, xs: 12 }} key={index}>
+                <Card sx={{ minHeight: 255, borderRadius: '5%', py: 0.1 }}>
                   <CardContent sx={{ textAlign: 'center', p: 4 }}>
                     <Box
                       sx={{
@@ -324,12 +304,8 @@ export default function HomePage() {
                     >
                       <Icon icon={item.icon} fontSize={24} />
                     </Box>
-                    <Typography variant="h6" component="h3" gutterBottom>
-                      {item.title}
-                    </Typography>
-                    <Typography color="text.secondary">
-                      {item.description}
-                    </Typography>
+                    <Typography variant="h6" gutterBottom>{item.title}</Typography>
+                    <Typography color="text.secondary">{item.description}</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -342,7 +318,7 @@ export default function HomePage() {
       <Box sx={{ py: 8 }}>
         <Container maxWidth="lg">
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
               Servicios destacados
             </Typography>
             <Button
@@ -358,7 +334,7 @@ export default function HomePage() {
 
           <Grid container spacing={3}>
             {featuredServices.map((service) => (
-              <Grid size={{xs:6,md:3}}  key={service.id}>
+              <Grid size={{ xs: 6, md: 3 }} key={service.id}>
                 <ServiceCard service={service} />
               </Grid>
             ))}
@@ -366,15 +342,19 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Sección de categorías populares */}
+      {/* Sección de categorías */}
       <Box sx={{ py: 6, backgroundColor: '#f5f5f5' }}>
         <Container maxWidth="lg">
-          <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
             Explora por categorías
           </Typography>
           <Grid container spacing={2} sx={{ py: 3 }}>
             {popularCategories.slice(0, 6).map((category) => (
-              <Grid sx={{ backgroundColor: '#fff', minHeight: '150px', borderRadius: '12px' }} size={{md:2,xs:6}} key={category.id}>
+              <Grid
+                sx={{ backgroundColor: '#fff', minHeight: '150px', borderRadius: '12px' }}
+                size={{ md: 2, xs: 6 }}
+                key={category.id}
+              >
                 <Button
                   component={RouterLink}
                   to={`/services?category=${category.id}`}
@@ -411,10 +391,10 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Sección de llamado a la acción (CTA) */}
+      {/* CTA final */}
       <Box sx={{ py: 10, bgcolor: 'primary.main', color: 'white' }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
             ¿Listo para unirte a nuestra comunidad?
           </Typography>
           <Typography sx={{ mb: 4, opacity: 0.9 }} maxWidth="600px" mx="auto">
@@ -427,13 +407,10 @@ export default function HomePage() {
               sx={{
                 fontWeight: 'medium',
                 textTransform: 'none',
-                borderRadius: '12px',  // Bordes más redondeados
-                backgroundColor: '#FFf', // Color personalizado
-                color: '#333', // Color del texto
-                '&:hover': {
-                  backgroundColor: '#e9e9e9', // Color más oscuro para el hover
-                  color: '#000' // Color del texto en hover
-                }
+                borderRadius: '12px',
+                backgroundColor: '#fff',
+                color: '#333',
+                '&:hover': { backgroundColor: '#e9e9e9', color: '#000' }
               }}
               component={RouterLink}
               to={user ? '/profile' : '/register'}
@@ -457,8 +434,13 @@ export default function HomePage() {
             </Button>
           </Box>
         </Container>
+
         {/* Modal para crear un nuevo servicio */}
-        <ServiceModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={handleCreateService} />
+        <ServiceModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onCreate={handleCreateService}
+        />
       </Box>
     </>
   );
