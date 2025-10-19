@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage.tsx';
 import MainLayout from './layouts/main-layout';
 import ServicesPage from './pages/ServicesPage.tsx';
 import { ServiceDetailPage } from './pages/ServiceDetail.tsx';
-import ProtectedRoute from './components/ProtectedRoute';
 import { ProfilePage } from './pages/ProfilePage';
 import { WalletPage } from './pages/WalletPage';
 
@@ -15,60 +14,57 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/"
-          element={<Navigate to="/login" />} />
+
+        {/* Redirige / al home directamente */}
+        <Route path="/" element={<Navigate to="/home" />} />
+
         <Route
           path="/home"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <HomePage />
-              </MainLayout>
-            </ProtectedRoute>
+            <MainLayout>
+              <HomePage />
+            </MainLayout>
           }
         />
+
         <Route
           path="/services"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ServicesPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <MainLayout>
+              <ServicesPage />
+            </MainLayout>
           }
         />
+
         <Route
           path="/services/:id"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ServiceDetailPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <MainLayout>
+              <ServiceDetailPage />
+            </MainLayout>
           }
         />
+
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <ProfilePage />
-              </MainLayout>
-            </ProtectedRoute>
+            <MainLayout>
+              <ProfilePage />
+            </MainLayout>
           }
         />
+
         <Route
           path="/wallet"
           element={
-            <ProtectedRoute>
-              <MainLayout>
-                <WalletPage />
-              </MainLayout>
-            </ProtectedRoute>
+            <MainLayout>
+              <WalletPage />
+            </MainLayout>
           }
         />
-        <Route path="*" element={<Navigate to="/" />} />
+
+        {/* Si la ruta no existe, redirige al home */}
+        <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </Router>
   );
