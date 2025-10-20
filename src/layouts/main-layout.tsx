@@ -85,34 +85,35 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Logo Section */}
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              component={RouterLink}
-              to="/home"
-            >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Icon
                 icon="lucide:handshake"
                 style={{
                   marginRight: '8px',
                   fontSize: '24px',
-                  color: '#000'
+                  color: '#000',
                 }}
               />
               <Typography
                 variant="h6"
                 noWrap
+                component={RouterLink}
+                to="/home"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   textDecoration: 'none',
                   color: 'primary.main',
                   fontWeight: 'bold',
+                  '&:hover': {
+                    color: 'primary.dark',
+                    textDecoration: 'none',
+                  },
                 }}
               >
                 SkillTrade
               </Typography>
             </Box>
-
 
             {/* Navigation Links (Desktop) */}
             <Box sx={{
