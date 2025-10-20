@@ -85,7 +85,11 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Logo Section */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              component={RouterLink}
+              to="/home"
+            >
               <Icon
                 icon="lucide:handshake"
                 style={{
@@ -97,8 +101,6 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
               <Typography
                 variant="h6"
                 noWrap
-                component="a"
-                href="#app-bar-with-responsive-menu"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -110,6 +112,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                 SkillTrade
               </Typography>
             </Box>
+
 
             {/* Navigation Links (Desktop) */}
             <Box sx={{
@@ -241,12 +244,12 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
        * Contenido principal
        * Área flexible que se expande para llenar el espacio disponible
        */}
-<Box component="main" sx={{ flexGrow: 1 }}>
-  {/* Eliminar el Container o configurarlo sin padding lateral */}
-  <Box sx={{ pt: 8 }}>  {/* Solo padding top para el AppBar */}
-    {children}
-  </Box>
-</Box>
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        {/* Eliminar el Container o configurarlo sin padding lateral */}
+        <Box sx={{ pt: 8 }}>  {/* Solo padding top para el AppBar */}
+          {children}
+        </Box>
+      </Box>
 
       {/* 
        * Pie de página
@@ -269,7 +272,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
              * Sección de información de la empresa
              * Logo, nombre y descripción breve
              */}
-            <Grid size={{md:3,xs:6}}>
+            <Grid size={{ md: 3, xs: 6 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Icon
                   icon="lucide:handshake"
@@ -303,7 +306,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
              * Enlaces de navegación rápida
              * Organizados en categorías para fácil acceso
              */}
-            <Grid size={{md:3,xs:6}}>
+            <Grid size={{ md: 3, xs: 6 }}>
               <Typography variant="subtitle1" color="text.primary" gutterBottom>
                 Explorar
               </Typography>
@@ -318,7 +321,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
              * Enlaces de soporte y ayuda
              * Recursos para usuarios
              */}
-            <Grid size={{md:3,xs:6}}>
+            <Grid size={{ md: 3, xs: 6 }}>
               <Typography variant="subtitle1" color="text.primary" gutterBottom>
                 Soporte
               </Typography>
@@ -333,7 +336,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
              * Información legal
              * Enlaces a documentos importantes
              */}
-            <Grid size={{md:3,xs:6}}>
+            <Grid size={{ md: 3, xs: 6 }}>
               <Typography variant="subtitle1" color="text.primary" gutterBottom>
                 Legal
               </Typography>
