@@ -17,7 +17,7 @@ import { Grid } from '@mui/material';
 import Stack from '@mui/material/Stack';
 import Link from '@mui/material/Link';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { authService, fetchUserProfile } from '../services/authService';
+import { authService, fetchUserProfile, AUTH_SERVICE_BASE_URL } from '../services/authService';
 
 const pages = [
   { name: 'Inicio', path: '/home' },
@@ -47,7 +47,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
       fetchUserProfile(user.id)
         .then((data) => {
           if (data.foto_url) {
-            setAvatarUrl('http://localhost:8001' + data.foto_url);
+            setAvatarUrl(`${AUTH_SERVICE_BASE_URL}${data.foto_url}`);
           }
         })
         .catch(() => setAvatarUrl('ornitorrinco.png'));

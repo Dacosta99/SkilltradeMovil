@@ -1,8 +1,13 @@
 import type { Service, ServiceProfile } from '../types/service';
 import { categories } from '../data/categories';
+import { AUTH_SERVICE_BASE_URL } from './authService';
+
+export const CATALOG_SERVICE_BASE_URL = 'https://serviciopublicaroferta-509f2fe03a28.herokuapp.com';
+
+export const buildCatalogUrl = (path: string) => `${CATALOG_SERVICE_BASE_URL}${path}`;
 
 export async function fetchServicesFromAPI(): Promise<Service[]> {
-    const response = await fetch('http://localhost:8002/ofertas'); 
+    const response = await fetch(buildCatalogUrl('/ofertas')); 
     const data = await response.json();
     
     if (!response.ok) {
@@ -15,7 +20,7 @@ export async function fetchServicesFromAPI(): Promise<Service[]> {
         descripcion: oferta.descripcion,
         costo: oferta.costo,
         imagen: oferta.imagen_url
-        ? `http://localhost:8002${oferta.imagen_url}`
+        ? `${CATALOG_SERVICE_BASE_URL}${oferta.imagen_url}`
         : '', // fallback si no hay imagen
         ubicacion: oferta.ubicacion,
         categoria: categories.find(c => c.id === oferta.categoria) || categories[0],
@@ -23,7 +28,7 @@ export async function fetchServicesFromAPI(): Promise<Service[]> {
         id: oferta.cliente_id,
         nombre: oferta.cliente_nombre,
         avatar: oferta.cliente_foto_url
-        ? `http://localhost:8001${oferta.cliente_foto_url}`
+        ? `${AUTH_SERVICE_BASE_URL}${oferta.cliente_foto_url}`
         : '',
         rating: oferta.cliente_reputacion || 0.0,
         },
@@ -54,7 +59,7 @@ export async function createServiceInAPI(service: {
         formData.append('imagen', service.imagen);
     }
 
-    const response = await fetch('http://localhost:8002/ofertas', {
+    const response = await fetch(buildCatalogUrl('/ofertas'), {
         method: 'POST',
         body: formData,
     });
@@ -68,7 +73,7 @@ export async function createServiceInAPI(service: {
     }
 
     export async function fetchProfileServicesFromAPI(cliente_id: string) {
-    const url = new URL('http://localhost:8002/ofertas/cliente/' + cliente_id);
+    const url = new URL(buildCatalogUrl(`/ofertas/cliente/${cliente_id}`));
 
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error('Error al obtener los servicios');
@@ -80,7 +85,7 @@ export async function createServiceInAPI(service: {
         titulo: oferta.titulo,
         descripcion: oferta.descripcion,
         costo: oferta.costo,
-        imagen: oferta.imagen_url ? `http://localhost:8002${oferta.imagen_url}` : '',
+        imagen: oferta.imagen_url ? `${CATALOG_SERVICE_BASE_URL}${oferta.imagen_url}` : '',
         ubicacion: oferta.ubicacion,
         categoria: categories.find(c => c.id === oferta.categoria) || categories[0],
         createdAt: oferta.created_at,
@@ -89,7 +94,7 @@ export async function createServiceInAPI(service: {
 }
 
 export async function updateServiceVisibilityInAPI(serviceId: string): Promise<ServiceProfile> {
-    const response = await fetch(`http://localhost:8002/ofertas/${serviceId}/visibility`, {
+    const response = await fetch(buildCatalogUrl(`/ofertas/${serviceId}/visibility`), {
         method: 'PATCH',
         body: new URLSearchParams({ visible: String(false) }),
     });

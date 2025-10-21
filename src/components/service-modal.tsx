@@ -16,7 +16,7 @@ import {
 import { categories } from '../data/categories';
 import type { Service } from '../types/service';
 import { createServiceInAPI } from '../services/catalogService';
-import { authService } from '../services/authService';
+import { authService, AUTH_SERVICE_BASE_URL } from '../services/authService';
 
 interface CreateServiceModalProps {
   open: boolean;
@@ -95,7 +95,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ open, onClose, 
         id: created.cliente_id,
         nombre: created.cliente_nombre,
         avatar: created.cliente_foto_url
-          ? `http://localhost:8001${created.cliente_foto_url}`
+          ? `${AUTH_SERVICE_BASE_URL}${created.cliente_foto_url}`
           : '',
         rating: created.cliente_reputacion || 0.0,
       },

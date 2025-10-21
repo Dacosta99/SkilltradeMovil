@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import RegisterForm from '../components/RegisterForm';
-//import { authService } from '../services/authService';
+import { buildAuthUrl } from '../services/authService';
 //import { FortOutlined } from '@mui/icons-material';
 
 export default function RegisterPage() {
@@ -23,7 +23,7 @@ export default function RegisterPage() {
     formDataToSend.append("foto", formData.profilePhoto);
   }
 
-  await fetch("http://localhost:8001/users/register", {
+  await fetch(buildAuthUrl('/users/register'), {
     method: "POST",
     body: formDataToSend,
   });

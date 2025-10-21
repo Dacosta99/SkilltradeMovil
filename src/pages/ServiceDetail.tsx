@@ -38,12 +38,11 @@ import CheckIcon from '@mui/icons-material/Check';
 import { ReviewCard } from '../components/review-card';
 import { fetchServicesFromAPI } from '../services/catalogService';
 import ReviewModal from '../components/review-modal';
-import { authService } from '../services/authService';
-import { 
-  fetchReviewsByServiceWithAuthors, 
-  createReviewWithAuthorInfo 
+import { authService, fetchUserPublications, AUTH_SERVICE_BASE_URL } from '../services/authService';
+import {
+  fetchReviewsByServiceWithAuthors,
+  createReviewWithAuthorInfo
 } from '../services/reviewService';
-import { fetchUserPublications } from '../services/authService';
 
 
 
@@ -392,7 +391,7 @@ export const ServiceDetailPage: React.FC = () => {
               {/* Avatar y nombre del proveedor */}
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', mb: 3 }}>
                 <Avatar
-                  src={providerInfo ? `http://localhost:8001${providerInfo.foto_url}` : ''}
+                  src={providerInfo ? `${AUTH_SERVICE_BASE_URL}${providerInfo.foto_url}` : ''}
                   sx={{ width: 200, height: 200, mb: 2 }}
                   variant="circular"
                 />

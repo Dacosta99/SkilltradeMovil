@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import type { Profile } from '../types/profile';
-import { authService } from '../services/authService';
+import { authService, AUTH_SERVICE_BASE_URL, buildAuthUrl } from '../services/authService';
 import { ServiceCard } from '../components/service-card-profile';
 import { ReviewCard } from '../components/review-card-profile';
 import { fetchProfileServicesFromAPI } from '../services/catalogService';
@@ -25,7 +25,6 @@ import ServiceModal from '../components/service-modal';
 
 export const ProfilePage: React.FC = () => {
   const user = authService.getCurrentUser();
-  const API_URL = 'http://localhost:8001';
   const [isEditing, setIsEditing] = React.useState(false);
   const [tabValue, setTabValue] = React.useState(0);
   const [profileData, setProfileData] = React.useState<any>(null);
@@ -50,7 +49,7 @@ export const ProfilePage: React.FC = () => {
       nombre: data.nombre_completo || '',
       correo: data.correo || '',
       telefono: data.telefono || '',
-      fotoUrl: API_URL + data.foto_url,
+      fotoUrl: `${AUTH_SERVICE_BASE_URL}${data.foto_url}`,
       reputacion: data.reputacion || 0,
       direccion: data.direccion || '',
       skills: ['Diseño gráfico', 'Marketing digital', 'Redes sociales', 'Fotografía'],//falta impllementar en la bd
@@ -84,7 +83,7 @@ export const ProfilePage: React.FC = () => {
           // 3) Para cada review, puedes traer info del autor si quieres
           const reviewsWithAuthor = await Promise.all(
             reviews.map(async (review: any) => {
-              const authorRes = await fetch(`http://localhost:8001/users/${review.reviewer_id}/nombre_foto`);
+              const authorRes = await fetch(buildAuthUrl(`/users/${review.reviewer_id}/nombre_foto`));
               if (!authorRes.ok) throw new Error('Error autor');
               const author = await authorRes.json();
               return {
@@ -97,7 +96,7 @@ export const ProfilePage: React.FC = () => {
                 author: {
                   id: review.reviewer_id,
                   name: author.nombre_completo,
-                  avatar: "http://localhost:8001" + author.foto_url,
+                  avatar: `${AUTH_SERVICE_BASE_URL}${author.foto_url}`,
                 },
               };
             })

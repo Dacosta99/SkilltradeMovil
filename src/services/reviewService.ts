@@ -1,4 +1,4 @@
-import { fetchUserNameAndPhoto } from './authService';
+import { fetchUserNameAndPhoto, AUTH_SERVICE_BASE_URL } from './authService';
 
 export async function fetchReviewsFromAPI(cliente_id?: string) {
     const API_URL = 'http://localhost:8003';
@@ -61,7 +61,7 @@ export async function fetchReviewsByServiceWithAuthors(serviceId: string) {
                         author: {
                             id: review.reviewer_id,
                             name: author.nombre_completo,
-                            avatar: `http://localhost:8001${author.foto_url}`,
+                            avatar: `${AUTH_SERVICE_BASE_URL}${author.foto_url}`,
                         },
                     };
                 } catch (error) {
@@ -107,7 +107,7 @@ export async function createReviewWithAuthorInfo(reviewData: { service_id: strin
             author: {
                 id: createdReview.reviewer_id,
                 name: author.nombre_completo,
-                avatar: `http://localhost:8001${author.foto_url}`,
+                avatar: `${AUTH_SERVICE_BASE_URL}${author.foto_url}`,
             },
         };
     } catch (error) {
