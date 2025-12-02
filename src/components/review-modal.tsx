@@ -14,18 +14,38 @@ import StarIcon from '@mui/icons-material/Star';
 interface ReviewModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (review: { rating: number; comment: string }) => void;
+  onSubmit: (review: { rating: number; comment: string }) => Promise<void> | void;
 }
 
 const ReviewModal: React.FC<ReviewModalProps> = ({ open, onClose, onSubmit }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSend = () => {
-    onSubmit({ rating, comment });
-    setRating(5);
-    setComment('');
-    onClose();
+  React.useEffect(() => {
+    if (!open) {
+      setError(null);
+      setSending(false);
+    }
+  }, [open]);
+
+  const handleSend = async () => {
+    if (sending) return;
+
+    setError(null);
+    setSending(true);
+    try {
+      await onSubmit({ rating, comment: comment.trim() });
+      setRating(5);
+      setComment('');
+      onClose();
+    } catch (err: any) {
+      console.error('Error al enviar reseña:', err);
+      setError(err?.message || 'No pudimos guardar tu reseña. Inténtalo de nuevo.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -51,11 +71,21 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ open, onClose, onSubmit }) =>
             onChange={e => setComment(e.target.value)}
             fullWidth
           />
+          <Typography variant="caption" color="text.secondary">
+            Califica de 1 a 5 y deja un breve comentario sobre tu experiencia.
+          </Typography>
+          {error && (
+            <Typography variant="caption" color="error">
+              {error}
+            </Typography>
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="error">Cancelar</Button>
-        <Button onClick={handleSend} color="primary" variant="contained" disabled={!comment.trim()}>Enviar reseña</Button>
+        <Button onClick={handleSend} color="primary" variant="contained" disabled={!comment.trim() || sending}>
+          {sending ? 'Enviando...' : 'Enviar reseña'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

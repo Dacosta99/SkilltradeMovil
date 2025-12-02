@@ -82,7 +82,7 @@ export const ProfilePage: React.FC = () => {
       // 2) Para cada servicio, pedir sus reseñas
       const allReviews = await Promise.all(
         services.map(async (service: any) => {
-          const res = await fetch(`http://localhost:8003/reviews/service/${service.id}`);
+          const res = await fetch(`https://reviews-service-e40ebe811a73.herokuapp.com/reviews/service/${service.id}`);
           if (!res.ok) throw new Error(`Error reviews para servicio ${service.id}`);
           const reviews = await res.json();
 

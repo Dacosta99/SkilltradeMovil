@@ -34,6 +34,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 //import ShieldCheckIcon from '@mui/icons-material/Security';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckIcon from '@mui/icons-material/Check';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 //import { styled } from '@mui/material/styles';
 import { ReviewCard } from '../components/review-card';
 import { fetchServicesFromAPI } from '../services/catalogService';
@@ -44,6 +45,7 @@ import {
   createReviewWithAuthorInfo
 } from '../services/reviewService';
 import { transactionsService } from '../services/transactionsService';
+import type { Review } from '../types/review';
 
 
 
@@ -66,11 +68,12 @@ export const ServiceDetailPage: React.FC = () => {
   // Estado para el modal de agregar reseña
   const [openReview, setOpenReview] = React.useState(false);
   // Estado para las reseñas
-  const [localReviews, setLocalReviews] = React.useState<any[]>([]);
+  const [localReviews, setLocalReviews] = React.useState<Review[]>([]);
   // Estado para la información del proveedor
   const [providerInfo, setProviderInfo] = React.useState<any>(null);
   const [requesting, setRequesting] = React.useState(false);
   const [requestMessage, setRequestMessage] = React.useState<string | null>(null);
+  const [reviewsError, setReviewsError] = React.useState<string | null>(null);
 
   // Efecto para cargar las reseñas del servicio al montar el componente
   React.useEffect(() => {
@@ -79,9 +82,14 @@ export const ServiceDetailPage: React.FC = () => {
     const loadReviews = async () => {
       try {
         const reviewsWithAuthors = await fetchReviewsByServiceWithAuthors(id);
-        setLocalReviews(reviewsWithAuthors);
+        const sortedReviews = reviewsWithAuthors.sort(
+          (a: Review, b: Review) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setLocalReviews(sortedReviews);
+        setReviewsError(null);
       } catch (error) {
         console.error('Error cargando reseñas:', error);
+        setReviewsError('No pudimos cargar las reseñas de este servicio.');
         setLocalReviews([]);
       }
     };
@@ -111,21 +119,21 @@ export const ServiceDetailPage: React.FC = () => {
   const service = services.find(s => s.id === id);
 
   // Efecto para cargar información del proveedor cuando se encuentra el servicio
-  React.useEffect(() => {
+  const refreshProviderInfo = React.useCallback(async () => {
     if (!service) return;
 
-    const loadProviderInfo = async () => {
-      try {
-        const data = await fetchUserPublications(service.proveedor.id);
-        setProviderInfo(data);
-      } catch (error) {
-        console.error('Error al traer info del proveedor:', error);
-        setProviderInfo(null);
-      }
-    };
-
-    loadProviderInfo();
+    try {
+      const data = await fetchUserPublications(service.proveedor.id);
+      setProviderInfo(data);
+    } catch (error) {
+      console.error('Error al traer info del proveedor:', error);
+      setProviderInfo(null);
+    }
   }, [service]);
+
+  React.useEffect(() => {
+    refreshProviderInfo();
+  }, [refreshProviderInfo]);
 
   // Funciones para abrir/cerrar el modal de contacto
   const handleOpen = () => setOpen(true);
@@ -136,19 +144,29 @@ export const ServiceDetailPage: React.FC = () => {
 
   // Función para agregar una nueva reseña
   const handleAddReview = async (review: { rating: number; comment: string }) => {
-    if (!id) return;
+    if (!id) {
+      throw new Error('Servicio no disponible para reseñar.');
+    }
 
     try {
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
-        throw new Error('Usuario no autenticado');
+        throw new Error('Debes iniciar sesión para dejar una reseña.');
+      }
+
+      if (review.rating < 1 || review.rating > 5) {
+        throw new Error('La calificación debe estar entre 1 y 5 estrellas.');
+      }
+
+      if (!review.comment.trim()) {
+        throw new Error('Agrega un breve comentario sobre tu experiencia.');
       }
 
       const reviewData = {
         service_id: id,
         reviewer_id: currentUser.id,
         rating: review.rating,
-        comment: review.comment,
+        comment: review.comment.trim(),
       };
 
       // Usar la función del servicio para crear la reseña con información del autor
@@ -156,9 +174,10 @@ export const ServiceDetailPage: React.FC = () => {
       
       // Agregar la nueva reseña al estado local
       setLocalReviews((prev) => [newReviewWithAuthor, ...prev]);
-    } catch (error) {
+      await refreshProviderInfo();
+    } catch (error: any) {
       console.error('Error enviando reseña:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
+      throw new Error(error?.message || 'No pudimos guardar tu reseña. Intenta nuevamente.');
     }
   };
 
@@ -189,6 +208,63 @@ export const ServiceDetailPage: React.FC = () => {
     } finally {
       setRequesting(false);
     }
+  };
+
+  const ratingStats = React.useMemo(() => {
+    if (!localReviews.length) {
+      return {
+        average: 0,
+        total: 0,
+        distribution: [5, 4, 3, 2, 1].map((star) => ({
+          star,
+          count: 0,
+          percentage: 0,
+        })),
+      };
+    }
+
+    const counts = [0, 0, 0, 0, 0];
+    let sum = 0;
+
+    localReviews.forEach((review) => {
+      const rating = Math.min(Math.max(Math.round(review.rating), 1), 5);
+      counts[rating - 1] += 1;
+      sum += rating;
+    });
+
+    const total = localReviews.length;
+    const average = parseFloat((sum / total).toFixed(1));
+
+    return {
+      average,
+      total,
+      distribution: [5, 4, 3, 2, 1].map((star) => {
+        const count = counts[star - 1];
+        const percentage = total ? Math.round((count / total) * 100) : 0;
+        return { star, count, percentage };
+      }),
+    };
+  }, [localReviews]);
+
+  const renderAverageStars = React.useCallback((average: number) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const value = average - (star - 1);
+        if (value >= 1) {
+          return <StarIcon key={star} sx={{ color: 'warning.main', fontSize: '1.2rem' }} />;
+        }
+        if (value >= 0.5) {
+          return <StarHalfIcon key={star} sx={{ color: 'warning.main', fontSize: '1.2rem' }} />;
+        }
+        return <StarBorderIcon key={star} sx={{ color: 'grey.400', fontSize: '1.2rem' }} />;
+      })}
+    </Box>
+  ), []);
+
+  const ratingBarColor = (star: number) => {
+    if (star >= 4) return 'success.main';
+    if (star === 3) return 'warning.main';
+    return 'error.main';
   };
 
   // Muestra pantalla de carga mientras se obtienen los datos
@@ -348,66 +424,56 @@ export const ServiceDetailPage: React.FC = () => {
                         Agregar reseña
                       </Button>
                     </Box>
+                    {reviewsError && (
+                      <Typography color="error" sx={{ mb: 2 }}>
+                        {reviewsError}
+                      </Typography>
+                    )}
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, mb: 3 }}>
                       {/* Calificación promedio y barras de porcentaje */}
                       <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, bgcolor: 'grey.100', borderRadius: 'lg' }}>
-                        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>4.8</Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                          <StarIcon sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
-                          <StarIcon sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
-                          <StarIcon sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
-                          <StarIcon sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
-                          <StarHalfIcon sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                          {ratingStats.total ? ratingStats.average.toFixed(1) : '—'}
+                        </Typography>
+                        <Box sx={{ mb: 1 }}>
+                          {renderAverageStars(ratingStats.average)}
                         </Box>
                         <Typography variant="caption" sx={{ color: 'grey.600' }}>{localReviews.length} reseñas</Typography>
                       </Box>
                       {/* Barras de porcentaje de calificaciones */}
                       <Box sx={{ flexGrow: 1 }}>
                         <Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ width: 96 }}>5 estrellas</Typography>
-                            <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
-                              <Box sx={{ height: '100%', bgcolor: 'success.main', width: '75%' }}></Box>
+                          {ratingStats.distribution.map((bucket) => (
+                            <Box key={bucket.star} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="caption" sx={{ width: 96 }}>
+                                {bucket.star} {bucket.star === 1 ? 'estrella' : 'estrellas'}
+                              </Typography>
+                              <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
+                                <Box sx={{ height: '100%', bgcolor: ratingBarColor(bucket.star), width: `${bucket.percentage}%`, transition: 'width 0.3s ease' }}></Box>
+                              </Box>
+                              <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>
+                                {bucket.percentage}%
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'grey.500', minWidth: 40, textAlign: 'right' }}>
+                                ({bucket.count})
+                              </Typography>
                             </Box>
-                            <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>75%</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ width: 96 }}>4 estrellas</Typography>
-                            <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
-                              <Box sx={{ height: '100%', bgcolor: 'success.main', width: '20%' }}></Box>
-                            </Box>
-                            <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>20%</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ width: 96 }}>3 estrellas</Typography>
-                            <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
-                              <Box sx={{ height: '100%', bgcolor: 'warning.main', width: '5%' }}></Box>
-                            </Box>
-                            <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>5%</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ width: 96 }}>2 estrellas</Typography>
-                            <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
-                              <Box sx={{ height: '100%', bgcolor: 'error.main', width: '0%' }}></Box>
-                            </Box>
-                            <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>0%</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" sx={{ width: 96 }}>1 estrella</Typography>
-                            <Box sx={{ flexGrow: 1, height: 8, bgcolor: 'grey.200', borderRadius: 'full', overflow: 'hidden' }}>
-                              <Box sx={{ height: '100%', bgcolor: 'error.main', width: '0%' }}></Box>
-                            </Box>
-                            <Typography variant="caption" sx={{ color: 'grey.600', width: 64 }}>0%</Typography>
-                          </Box>
+                          ))}
                         </Box>
                       </Box>
                     </Box>
                     <Divider sx={{ my: 3 }} />
                     {/* Lista de reseñas del servicio */}
                     <Box>
-                      {localReviews.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
-                      ))}
+                      {localReviews.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                          Aún no hay reseñas para este servicio. Sé la primera persona en compartir tu experiencia.
+                        </Typography>
+                      ) : (
+                        localReviews.map((review) => (
+                          <ReviewCard key={review.id} review={review} />
+                        ))
+                      )}
                     </Box>
                   </CardContent>
                 </Card>

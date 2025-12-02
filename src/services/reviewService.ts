@@ -1,8 +1,11 @@
 import { fetchUserNameAndPhoto, AUTH_SERVICE_BASE_URL } from './authService';
 
+const REVIEWS_SERVICE_BASE_URL = 'https://reviews-service-e40ebe811a73.herokuapp.com';
+
 export async function fetchReviewsFromAPI(cliente_id?: string) {
-    const API_URL = 'http://localhost:8003';
-    const url = cliente_id ? `${API_URL}/users/${cliente_id}/reviews` : `${API_URL}/reviews`;
+    const url = cliente_id
+        ? `${REVIEWS_SERVICE_BASE_URL}/users/${cliente_id}/reviews`
+        : `${REVIEWS_SERVICE_BASE_URL}/reviews`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -13,9 +16,7 @@ export async function fetchReviewsFromAPI(cliente_id?: string) {
 }
 
 export async function postReviewToAPI(review: { service_id: string, reviewer_id: string, rating: number, comment: string }) {
-    const API_URL = 'http://localhost:8003/reviews';
-
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${REVIEWS_SERVICE_BASE_URL}/reviews`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -32,8 +33,7 @@ export async function postReviewToAPI(review: { service_id: string, reviewer_id:
 }
 
 export async function fetchReviewsByService(serviceId: string) {
-    const API_URL = 'http://localhost:8003/reviews';
-    const response = await fetch(`${API_URL}/service/${serviceId}`);
+    const response = await fetch(`${REVIEWS_SERVICE_BASE_URL}/reviews/service/${serviceId}`);
 
     if (!response.ok) {
         throw new Error('Error al obtener las reseñas del servicio');
