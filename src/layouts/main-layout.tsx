@@ -18,6 +18,7 @@ import Stack from '@mui/material/Stack';
 import Link from '@mui/material/Link';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { authService, fetchUserProfile, AUTH_SERVICE_BASE_URL } from '../services/authService';
+import { transactionsService } from '../services/transactionsService';
 
 const pages = [
   { name: 'Inicio', path: '/home' },
@@ -52,10 +53,15 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         })
         .catch(() => setAvatarUrl('ornitorrinco.png'));
 
-      authService
-        .getProfile(user.id)
-        .then((data) => setSaldoCreditos(data.saldo_creditos ?? 0))
-        .catch(() => setSaldoCreditos(0));
+      transactionsService
+        .getBalance(user.id)
+        .then((saldo) => setSaldoCreditos(saldo))
+        .catch(() => {
+          authService
+            .getProfile(user.id)
+            .then((data) => setSaldoCreditos(data.saldo_creditos ?? 0))
+            .catch(() => setSaldoCreditos(0));
+        });
     } else {
       // Si no hay usuario, valores de prueba
       setAvatarUrl('ornitorrinco.png');

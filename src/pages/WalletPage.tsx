@@ -19,8 +19,9 @@ import {
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { TransactionHistory } from '../components/transaction-history';
-import { transactions } from '../data/transactions';
 import { authService } from '../services/authService';
+import { transactionsService } from '../services/transactionsService';
+import type { Transaction } from '../types/transaction';
 
 export const WalletPage: React.FC = () => {
   const user = authService.getCurrentUser();
@@ -29,6 +30,41 @@ export const WalletPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = React.useState<any>(null);
   const [transferNote, setTransferNote] = React.useState('');
   const [tabValue, setTabValue] = React.useState('all');
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [balance, setBalance] = React.useState<number>(0);
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const loadWallet = async () => {
+      try {
+        setLoading(true);
+        const [saldo, history] = await Promise.all([
+          transactionsService.getBalance(user.id),
+          transactionsService.getHistory(user.id)
+        ]);
+        setBalance(saldo);
+        setTransactions(history);
+      } catch (err) {
+        console.error('Error al cargar el monedero', err);
+        setBalance(0);
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWallet();
+  }, [user?.id]);
+
+  const totalIngresos = transactions
+    .filter(t => t.type === 'received' || t.type === 'bonus')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalGastos = transactions
+    .filter(t => t.type === 'sent')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   const handleTransfer = () => {
     // Aquí iría la lógica real de transferencia
@@ -55,7 +91,7 @@ export const WalletPage: React.FC = () => {
             <CardContent>
               <Box display="flex" flexDirection="column" alignItems="center" py={4}>
                 <Typography variant="h3" color="primary" fontWeight="bold" mb={1}>
-                  <span className="skill-coin">{user?.balance}</span>
+                  <span className="skill-coin">{balance}</span>
                 </Typography>
                 <Typography color="text.secondary" mb={3}>Balance actual</Typography>
                 <Box display="flex" gap={2} width="100%">
@@ -87,8 +123,8 @@ export const WalletPage: React.FC = () => {
                     </Box>
                     <Typography>Ingresos</Typography>
                   </Box>
-                  <Typography fontWeight={600} color="success.main">
-                    <span className="skill-coin">350</span>
+                    <Typography fontWeight={600} color="success.main">
+                    <span className="skill-coin">{totalIngresos}</span>
                   </Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -99,7 +135,7 @@ export const WalletPage: React.FC = () => {
                     <Typography>Gastos</Typography>
                   </Box>
                   <Typography fontWeight={600} color="error.main">
-                    <span className="skill-coin">100</span>
+                    <span className="skill-coin">{totalGastos}</span>
                   </Typography>
                 </Box>
               </Box>
@@ -109,35 +145,41 @@ export const WalletPage: React.FC = () => {
             <CardHeader title={<Typography variant="h6" fontWeight="bold">Actividad reciente</Typography>} sx={{ pb: 0 }} />
             <CardContent>
               <Box display="flex" flexDirection="column" gap={2}>
-                {transactions.slice(0, 3).map((transaction) => (
-                  <Box key={transaction.id} display="flex" alignItems="center" gap={2}>
-                    <Box sx={{ p: 1, borderRadius: '50%', bgcolor:
-                      transaction.type === 'received' ? 'success.light' : transaction.type === 'sent' ? 'error.light' : 'primary.light',
-                      color:
-                        transaction.type === 'received' ? 'success.main' : transaction.type === 'sent' ? 'error.main' : 'primary.main',
-                    }}>
-                      <Icon
-                        icon={
-                          transaction.type === 'received'
-                            ? 'lucide:arrow-down-left'
-                            : transaction.type === 'sent'
-                            ? 'lucide:arrow-up-right'
-                            : 'lucide:gift'
-                        }
-                      />
-                    </Box>
-                    <Box flexGrow={1}>
-                      <Typography fontWeight={500}>{transaction.description}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(transaction.date).toLocaleDateString('es-ES')}
+                {loading ? (
+                  <Typography color="text.secondary">Cargando actividad...</Typography>
+                ) : transactions.length === 0 ? (
+                  <Typography color="text.secondary">Sin movimientos recientes</Typography>
+                ) : (
+                  transactions.slice(0, 3).map((transaction) => (
+                    <Box key={transaction.id} display="flex" alignItems="center" gap={2}>
+                      <Box sx={{ p: 1, borderRadius: '50%', bgcolor:
+                        transaction.type === 'received' ? 'success.light' : transaction.type === 'sent' ? 'error.light' : 'primary.light',
+                        color:
+                          transaction.type === 'received' ? 'success.main' : transaction.type === 'sent' ? 'error.main' : 'primary.main',
+                      }}>
+                        <Icon
+                          icon={
+                            transaction.type === 'received'
+                              ? 'lucide:arrow-down-left'
+                              : transaction.type === 'sent'
+                              ? 'lucide:arrow-up-right'
+                              : 'lucide:gift'
+                          }
+                        />
+                      </Box>
+                      <Box flexGrow={1}>
+                        <Typography fontWeight={500}>{transaction.description}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(transaction.date).toLocaleDateString('es-ES')}
+                        </Typography>
+                      </Box>
+                      <Typography fontWeight={600} color={transaction.type === 'received' || transaction.type === 'bonus' ? 'success.main' : 'error.main'}>
+                        {transaction.type === 'received' || transaction.type === 'bonus' ? '+' : '-'}
+                        <span className="skill-coin">{transaction.amount}</span>
                       </Typography>
                     </Box>
-                    <Typography fontWeight={600} color={transaction.type === 'received' || transaction.type === 'bonus' ? 'success.main' : 'error.main'}>
-                      {transaction.type === 'received' || transaction.type === 'bonus' ? '+' : '-'}
-                      <span className="skill-coin">{transaction.amount}</span>
-                    </Typography>
-                  </Box>
-                ))}
+                  ))
+                )}
                 <Button variant="text" color="primary" fullWidth endIcon={<Icon icon="lucide:chevron-right" />}>Ver todo</Button>
               </Box>
             </CardContent>
@@ -154,10 +196,16 @@ export const WalletPage: React.FC = () => {
                 <Tab value="bonus" label="Bonificaciones" />
               </Tabs>
               <Box mt={2}>
-                {tabValue === 'all' && <TransactionHistory transactions={transactions} />}
-                {tabValue === 'received' && <TransactionHistory transactions={transactions.filter(t => t.type === 'received')} />}
-                {tabValue === 'sent' && <TransactionHistory transactions={transactions.filter(t => t.type === 'sent')} />}
-                {tabValue === 'bonus' && <TransactionHistory transactions={transactions.filter(t => t.type === 'bonus')} />}
+                {loading ? (
+                  <Typography color="text.secondary">Cargando historial...</Typography>
+                ) : (
+                  <>
+                    {tabValue === 'all' && <TransactionHistory transactions={transactions} />}
+                    {tabValue === 'received' && <TransactionHistory transactions={transactions.filter(t => t.type === 'received')} />}
+                    {tabValue === 'sent' && <TransactionHistory transactions={transactions.filter(t => t.type === 'sent')} />}
+                    {tabValue === 'bonus' && <TransactionHistory transactions={transactions.filter(t => t.type === 'bonus')} />}
+                  </>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -187,7 +235,7 @@ export const WalletPage: React.FC = () => {
               value={transferAmount}
               onChange={e => setTransferAmount(e.target.value)}
               InputProps={{ startAdornment: <span className="skill-coin"></span> }}
-              helperText={`Balance disponible: ${user?.balance} SkillCoins`}
+              helperText={`Balance disponible: ${balance} SkillCoins`}
             />
             <TextField
               label="Concepto (opcional)"
@@ -203,7 +251,7 @@ export const WalletPage: React.FC = () => {
             onClick={handleTransfer}
             color="primary"
             variant="contained"
-            disabled={!selectedUser || !transferAmount || parseInt(transferAmount) <= 0 || parseInt(transferAmount) > (user?.balance || 0)}
+            disabled={!selectedUser || !transferAmount || parseInt(transferAmount) <= 0 || parseInt(transferAmount) > (balance || 0)}
           >
             Transferir
           </Button>

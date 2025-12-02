@@ -43,6 +43,7 @@ import {
   fetchReviewsByServiceWithAuthors,
   createReviewWithAuthorInfo
 } from '../services/reviewService';
+import { transactionsService } from '../services/transactionsService';
 
 
 
@@ -68,6 +69,8 @@ export const ServiceDetailPage: React.FC = () => {
   const [localReviews, setLocalReviews] = React.useState<any[]>([]);
   // Estado para la información del proveedor
   const [providerInfo, setProviderInfo] = React.useState<any>(null);
+  const [requesting, setRequesting] = React.useState(false);
+  const [requestMessage, setRequestMessage] = React.useState<string | null>(null);
 
   // Efecto para cargar las reseñas del servicio al montar el componente
   React.useEffect(() => {
@@ -156,6 +159,35 @@ export const ServiceDetailPage: React.FC = () => {
     } catch (error) {
       console.error('Error enviando reseña:', error);
       // Aquí podrías mostrar un mensaje de error al usuario
+    }
+  };
+
+  const handleRequestService = async () => {
+    if (!id || !service) return;
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      setRequestMessage('Debes iniciar sesión para contratar un servicio');
+      return;
+    }
+    if (currentUser.id === service.proveedor.id) {
+      setRequestMessage('No puedes contratar tu propio servicio');
+      return;
+    }
+    try {
+      setRequesting(true);
+      setRequestMessage(null);
+      await transactionsService.requestService({
+        servicio_id: id,
+        comprador_id: currentUser.id,
+        proveedor_id: service.proveedor.id,
+        monto: service.costo,
+        descripcion: service.titulo,
+      });
+      setRequestMessage('Solicitud enviada al proveedor. Recibirás la confirmación cuando la acepte.');
+    } catch (err: any) {
+      setRequestMessage(err?.message || 'No se pudo enviar la solicitud');
+    } finally {
+      setRequesting(false);
     }
   };
 
@@ -427,6 +459,18 @@ export const ServiceDetailPage: React.FC = () => {
                   color="primary"
                   fullWidth
                   size="large"
+                  onClick={handleRequestService}
+                  startIcon={<CheckCircleIcon />}
+                  sx={{ mb: 1 }}
+                  disabled={requesting}
+                >
+                  {requesting ? 'Enviando...' : 'Solicitar servicio'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  fullWidth
+                  size="large"
                   onClick={handleOpen}
                   startIcon={<MessageIcon />}
                   sx={{ mb: 1 }}
@@ -441,6 +485,11 @@ export const ServiceDetailPage: React.FC = () => {
                 >
                   Reportar
                 </Button>
+                {requestMessage && (
+                  <Typography variant="body2" color="text.secondary" mt={1} textAlign="center">
+                    {requestMessage}
+                  </Typography>
+                )}
               </Box>
             </CardContent>
           </Card>

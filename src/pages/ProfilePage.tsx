@@ -21,6 +21,8 @@ import { ServiceCard } from '../components/service-card-profile';
 import { ReviewCard } from '../components/review-card-profile';
 import { fetchProfileServicesFromAPI } from '../services/catalogService';
 import ServiceModal from '../components/service-modal';
+import { transactionsService } from '../services/transactionsService';
+import type { ServiceHistoryItem } from '../types/transaction';
 //import { fetchReviewsFromAPI } from '../services/reviewService';
 
 export const ProfilePage: React.FC = () => {
@@ -63,6 +65,10 @@ export const ProfilePage: React.FC = () => {
 
   const [userServices, setUserServices] = React.useState<any[]>([]);
   const [userReviews, setUserReviews] = React.useState<any[]>([]);
+  const [serviciosContratados, setServiciosContratados] = React.useState<ServiceHistoryItem[]>([]);
+  const [serviciosPrestados, setServiciosPrestados] = React.useState<ServiceHistoryItem[]>([]);
+  const [solicitudesPendientes, setSolicitudesPendientes] = React.useState<ServiceHistoryItem[]>([]);
+  const [aceptandoId, setAceptandoId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
   if (!user) return;
@@ -117,6 +123,33 @@ export const ProfilePage: React.FC = () => {
   fetchAllReviews();
 }, [user?.id]);
 
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    transactionsService
+      .getServiceHistory(user.id)
+      .then(({ contratados, prestados }) => {
+        setServiciosContratados(contratados || []);
+        setServiciosPrestados(prestados || []);
+      })
+      .catch((err) => {
+        console.error('Error al cargar historial de servicios', err);
+        setServiciosContratados([]);
+        setServiciosPrestados([]);
+      });
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+    transactionsService
+      .getPendingServiceRequests(user.id)
+      .then((data) => setSolicitudesPendientes(data || []))
+      .catch((err) => {
+        console.error('Error al cargar solicitudes pendientes', err);
+        setSolicitudesPendientes([]);
+      });
+  }, [user?.id]);
+
   // Estado para controlar el modal de nuevo servicio
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -135,6 +168,37 @@ export const ProfilePage: React.FC = () => {
 
   const handleSaveProfile = () => {
     setIsEditing(false);
+  };
+
+  const formatServiceDate = (date: string) =>
+    new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(new Date(date));
+
+  const mapEstado = (estado?: string) => {
+    if (!estado) return 'Completado';
+    if (estado === 'completed') return 'Completado';
+    if (estado === 'pending') return 'Pendiente';
+    if (estado === 'cancelled') return 'Cancelado';
+    return estado;
+  };
+
+  const handleAcceptRequest = async (transaccionId: string) => {
+    if (!user?.id) return;
+    try {
+      setAceptandoId(transaccionId);
+      await transactionsService.acceptServiceRequest(transaccionId, user.id);
+      setSolicitudesPendientes((prev) => prev.filter((s) => s.id !== transaccionId));
+      // Refresca historial de prestados para reflejar el nuevo servicio aceptado
+      const { prestados } = await transactionsService.getServiceHistory(user.id);
+      setServiciosPrestados(prestados || []);
+    } catch (err) {
+      console.error('No se pudo aceptar la solicitud', err);
+    } finally {
+      setAceptandoId(null);
+    }
   };
 
   return (
@@ -337,49 +401,107 @@ export const ProfilePage: React.FC = () => {
                     <Box border={1} borderColor="divider" borderRadius={2} overflow="hidden">
                       <Box bgcolor="grey.100" p={2} borderBottom={1} borderColor="divider">
                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Typography fontWeight="bold">Servicios contratados</Typography>
-                          <Chip size="small" label="3 servicios" />
+                          <Typography fontWeight="bold">Solicitudes recibidas</Typography>
+                          <Chip size="small" label={`${solicitudesPendientes.length} pendientes`} />
                         </Box>
                       </Box>
                       <Box p={2}>
-                        <Box display="flex" flexDirection="column" gap={2}>
-                          {[1, 2, 3].map((item) => (
-                            <Box key={item} display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
-                              <Box display="flex" alignItems="center" gap={2}>
-                                <Avatar src={`https://img.heroui.chat/image/avatar?w=200&h=200&u=${item + 10}`} sx={{ width: 40, height: 40 }} />
-                                <Box>
-                                  <Typography fontWeight="medium">Clases de guitarra</Typography>
-                                  <Typography variant="caption" color="text.secondary">12 de junio, 2023</Typography>
+                        {solicitudesPendientes.length === 0 ? (
+                          <Box textAlign="center" py={2}>
+                            <Typography color="text.secondary">Sin solicitudes pendientes</Typography>
+                          </Box>
+                        ) : (
+                          <Box display="flex" flexDirection="column" gap={2}>
+                            {solicitudesPendientes.map((item) => (
+                              <Box key={item.id} display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
+                                <Box display="flex" alignItems="center" gap={2}>
+                                  <Avatar src={item.contraparte?.avatar || undefined} sx={{ width: 40, height: 40 }} />
+                                  <Box>
+                                    <Typography fontWeight="medium">{item.titulo}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.contraparte?.name || 'Cliente'} • {formatServiceDate(item.fecha)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Box display="flex" gap={1}>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    size="small"
+                                    onClick={() => handleAcceptRequest(item.id)}
+                                    disabled={aceptandoId === item.id}
+                                  >
+                                    {aceptandoId === item.id ? 'Aceptando...' : 'Aceptar'}
+                                  </Button>
                                 </Box>
                               </Box>
-                              <Chip color="success" size="small" label="Completado" />
-                            </Box>
-                          ))}
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                    <Box border={1} borderColor="divider" borderRadius={2} overflow="hidden">
+                      <Box bgcolor="grey.100" p={2} borderBottom={1} borderColor="divider">
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography fontWeight="bold">Servicios contratados</Typography>
+                          <Chip size="small" label={`${serviciosContratados.length} servicios`} />
                         </Box>
+                      </Box>
+                      <Box p={2}>
+                        {serviciosContratados.length === 0 ? (
+                          <Box textAlign="center" py={2}>
+                            <Typography color="text.secondary">Aún no has contratado servicios</Typography>
+                          </Box>
+                        ) : (
+                          <Box display="flex" flexDirection="column" gap={2}>
+                            {serviciosContratados.map((item) => (
+                              <Box key={item.id} display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
+                                <Box display="flex" alignItems="center" gap={2}>
+                                  <Avatar src={item.contraparte?.avatar || undefined} sx={{ width: 40, height: 40 }} />
+                                  <Box>
+                                    <Typography fontWeight="medium">{item.titulo}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.contraparte?.name || 'Proveedor'} • {formatServiceDate(item.fecha)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Chip color="success" size="small" label={mapEstado(item.estado)} />
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                     <Box border={1} borderColor="divider" borderRadius={2} overflow="hidden">
                       <Box bgcolor="grey.100" p={2} borderBottom={1} borderColor="divider">
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                           <Typography fontWeight="bold">Servicios prestados</Typography>
-                          <Chip size="small" label="5 servicios" />
+                          <Chip size="small" label={`${serviciosPrestados.length} servicios`} />
                         </Box>
                       </Box>
                       <Box p={2}>
-                        <Box display="flex" flexDirection="column" gap={2}>
-                          {[1, 2, 3, 4, 5].map((item) => (
-                            <Box key={item} display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
-                              <Box display="flex" alignItems="center" gap={2}>
-                                <Avatar src={`https://img.heroui.chat/image/avatar?w=200&h=200&u=${item + 5}`} sx={{ width: 40, height: 40 }} />
-                                <Box>
-                                  <Typography fontWeight="medium">Diseño de logo</Typography>
-                                  <Typography variant="caption" color="text.secondary">3 de mayo, 2023</Typography>
+                        {serviciosPrestados.length === 0 ? (
+                          <Box textAlign="center" py={2}>
+                            <Typography color="text.secondary">Aún no has prestado servicios</Typography>
+                          </Box>
+                        ) : (
+                          <Box display="flex" flexDirection="column" gap={2}>
+                            {serviciosPrestados.map((item) => (
+                              <Box key={item.id} display="flex" justifyContent="space-between" alignItems="center" p={2} bgcolor="background.paper" borderRadius={2} border={1} borderColor="divider">
+                                <Box display="flex" alignItems="center" gap={2}>
+                                  <Avatar src={item.contraparte?.avatar || undefined} sx={{ width: 40, height: 40 }} />
+                                  <Box>
+                                    <Typography fontWeight="medium">{item.titulo}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.contraparte?.name || 'Cliente'} • {formatServiceDate(item.fecha)}
+                                    </Typography>
+                                  </Box>
                                 </Box>
+                                <Chip color="success" size="small" label={mapEstado(item.estado)} />
                               </Box>
-                              <Chip color="success" size="small" label="Completado" />
-                            </Box>
-                          ))}
-                        </Box>
+                            ))}
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   </Box>
